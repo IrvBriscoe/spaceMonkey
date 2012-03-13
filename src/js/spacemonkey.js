@@ -1,6 +1,32 @@
 // TODO: investigate fps drop after game reset
 // TODO: add game start screen
 
+// requestAnimationFrame polyfill
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame']
+                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+ 
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); },
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+ 
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
+
 // ===================================================================
 // Game initialization
 // ===================================================================
@@ -170,12 +196,12 @@ SpaceMonkey.prototype.player.prototype.draw = function() {
     
     this.checkCollision();
     
-	try {
-		this.game.ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
-	} 
-	catch (e) {
+    try {
+        this.game.ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
+    } 
+    catch (e) {
         this.game.debug(e);
-	};
+    };
 };
 
 // ===================================================================
@@ -255,12 +281,12 @@ SpaceMonkey.prototype.objectBanana.prototype.draw = function() {
 
     this.move();
 
-	try {
-		this.game.ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
-	} 
-	catch (e) {
+    try {
+        this.game.ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
+    } 
+    catch (e) {
         this.game.debug(e);
-	};
+    };
 };
 
 // ===================================================================
@@ -320,12 +346,12 @@ SpaceMonkey.prototype.objectBomb.prototype.draw = function() {
 
     this.move();
     
-	try {
-		this.game.ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
-	} 
-	catch (e) {
+    try {
+        this.game.ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
+    } 
+    catch (e) {
         this.game.debug(e);
-	};
+    };
 };
 
 // ===================================================================
@@ -344,15 +370,15 @@ SpaceMonkey.prototype.scoreBoard.prototype.reset = function() {
     this.game.scored = false;
 };
 SpaceMonkey.prototype.scoreBoard.prototype.draw = function() {
-	try {
-    	this.game.ctx.fillStyle = '#f00';
-    	this.game.ctx.font = 'bold 16px/16px Monospace, Fixedsys, sans-serif';
+    try {
+        this.game.ctx.fillStyle = '#f00';
+        this.game.ctx.font = 'bold 16px/16px Monospace, Fixedsys, sans-serif';
 
-    	this.game.ctx.fillText('SCORE: ' + this.game.score, this.game.width / 2 - 50, 16);
-	} 
-	catch (e) {
+        this.game.ctx.fillText('SCORE: ' + this.game.score, this.game.width / 2 - 50, 16);
+    } 
+    catch (e) {
         this.game.debug(e);
-	};
+    };
 };
 
 // ===================================================================
@@ -376,7 +402,7 @@ SpaceMonkey.prototype.render = function() {
             this.objects[i].draw();
         }
         
-        this.renderid = setTimeout(proxyRender, 1000 / this.rendermxf);
+        this.renderid = requestAnimationFrame(proxyRender);
     }
     else {
         this.renderGameStats();
@@ -393,33 +419,33 @@ SpaceMonkey.prototype.renderFPS = function() {
         this.renderf = 0;
     }
 
-	this.ctx.fillStyle = '#0f0';
-	this.ctx.font = '10px/10px Monospace, Fixedsys, sans-serif';
+    this.ctx.fillStyle = '#0f0';
+    this.ctx.font = '10px/10px Monospace, Fixedsys, sans-serif';
 
-	this.ctx.fillText('FPS: ' + this.fps, 0, 10);
+    this.ctx.fillText('FPS: ' + this.fps, 0, 10);
 };
 SpaceMonkey.prototype.renderGameStats = function() {
     var cx = this.width / 2,
         cy = this.height / 2;
 
     this.ctx.fillStyle = '#f00';
-	this.ctx.font = 'bold 20px/20px Monospace, Fixedsys, sans-serif';
+    this.ctx.font = 'bold 20px/20px Monospace, Fixedsys, sans-serif';
 
-	this.ctx.fillText('GAME OVER!', cx - 60, cy - 20);
+    this.ctx.fillText('GAME OVER!', cx - 60, cy - 20);
     this.ctx.fillText('PLAYED: ' + ((Date.now() - this.scoret) / (1000 * 60)).toFixed(2) + ' min.', cx - 100, cy);
     
     this.ctx.font = 'bold 15px/15px Monospace, Fixedsys, sans-serif';
-	this.ctx.fillText('PLAY AGAIN?', cx - 50, cy + 60);
+    this.ctx.fillText('PLAY AGAIN?', cx - 50, cy + 60);
 };
 
 SpaceMonkey.prototype.clear = function() {
-	this.ctx.clearRect(0, 0, this.width, this.height);
+    this.ctx.clearRect(0, 0, this.width, this.height);
 
-	this.ctx.beginPath();
-	this.ctx.rect(0, 0, this.width, this.height);
-	this.ctx.closePath();
+    this.ctx.beginPath();
+    this.ctx.rect(0, 0, this.width, this.height);
+    this.ctx.closePath();
     this.ctx.fillStyle = '#0f2e60';
-	this.ctx.fill();
+    this.ctx.fill();
 };
 
 // ===================================================================
