@@ -35,8 +35,8 @@ var SpaceMonkey = function(settings) {
     this.options.preload && this.preload();
     
     // Canvas preparation
-    this.width = document.width;
-    this.height = document.height;
+    this.width = $(window).width();
+    this.height = $(window).height();
     
     this.canvas = document.createElement('canvas');
     this.canvas.width = this.width;
@@ -383,8 +383,6 @@ SpaceMonkey.prototype.render = function() {
     }
     
     this.options.showfps && this.renderFPS();
-    
-    console.log('render')
 };
 SpaceMonkey.prototype.renderFPS = function() {
     this.renderf++;
@@ -449,9 +447,6 @@ SpaceMonkey.prototype.preload = function() {
     }
 };
 SpaceMonkey.prototype.debug = function() {
-    if ('console' in window) {
-        (arguments.length > 1) ? console.log(Array.prototype.slice.call(arguments)) : console.log(arguments[0]);
-    }
 };
 
 $(document).ready(function() {
