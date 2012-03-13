@@ -25,9 +25,11 @@ var SpaceMonkey = function(settings) {
     this.fps = 0; // current fps value
     
     this.score = 0;
+    this.scored = false;
+    this.scoret = Date.now();
 
     // Resources management
-    this.resources = ['src/img/canvas.jpg', 'src/img/object_banana.png', 'src/img/object_bomb.png', 'src/img/player.png'];
+    this.resources = ['src/img/object_banana.png', 'src/img/object_bomb.png', 'src/img/player.png'];
     this.options.preload && this.preload();
     
     // Canvas preparation
@@ -70,6 +72,14 @@ SpaceMonkey.prototype.start = function() {
 
     this.render();
 };
+SpaceMonkey.prototype.reset = function() {
+    var i = 0,
+        l = this.objects.length;
+    
+    for (;i < l; i++) {
+        this.objects[i].reset();
+    }
+};
 SpaceMonkey.prototype.logic = function() {
     var that = this;
     var handleDeviceMotion = function(e) {
@@ -81,6 +91,22 @@ SpaceMonkey.prototype.logic = function() {
     window.addEventListener('devicemotion', handleDeviceMotion, false);
     this.canvas.addEventListener('mousemove', handleMouseMove, false);
 };
+
+SpaceMonkey.prototype.over = function() {
+    var that = this;
+    // this game is over, broheim
+    this.active = false;
+    
+    var handleCanvasClick = function() {
+        that.reset();
+        that.start();
+        
+        that.canvas.removeEventListener('click', handleCanvasClick, false);
+    };
+    
+    this.canvas.addEventListener('click', handleCanvasClick, false);
+};
+
 
 // ===================================================================
 // Player
@@ -109,6 +135,10 @@ SpaceMonkey.prototype.player.prototype.collision = function(i) {
     if (this.game.objects[i].collidable) {
         this.game.objects[i].reset();
         this.game.score += this.game.objects[i].value;
+        
+        (this.game.score <= 0) && this.game.over();
+        
+        (this.game.scored) || (this.game.scored = true);
     }
 };
 SpaceMonkey.prototype.player.prototype.checkCollision = function() {
@@ -210,7 +240,7 @@ SpaceMonkey.prototype.objectBanana.prototype.move = function() {
     else {
         this.y += this.game.options.accelmx;
     }
-    
+
     if (this.y >= this.game.height) {
         this.velocity = 0;
         this.reset();
@@ -222,7 +252,7 @@ SpaceMonkey.prototype.objectBanana.prototype.draw = function() {
     }
 
     this.move();
-    
+
 	try {
 		this.game.ctx.drawImage(this.img, this.x, this.y, this.width, this.height);
 	} 
@@ -306,6 +336,11 @@ SpaceMonkey.prototype.scoreBoard = function(parent) {
     this.name = 'scoreboard';
     this.collidable = false;
 };
+SpaceMonkey.prototype.scoreBoard.prototype.reset = function() {
+    this.game.score = 0;
+    this.game.scoret = Date.now();
+    this.game.scored = false;
+};
 SpaceMonkey.prototype.scoreBoard.prototype.draw = function() {
 	try {
     	this.game.ctx.fillStyle = '#f00';
@@ -317,7 +352,6 @@ SpaceMonkey.prototype.scoreBoard.prototype.draw = function() {
         this.game.debug(e);
 	};
 };
-
 
 // ===================================================================
 // Rendering functions
@@ -331,38 +365,54 @@ SpaceMonkey.prototype.render = function() {
     // Render clean background
     this.clear();
     
-    // Render player
-    this.player.draw();
-    
-    // Call rendering of all the objects
-    for (var i = 0, l = this.objects.length; i < l; i++) {
-        this.objects[i].draw();
-    }
-    
     if (this.active) {
+        // Render player
+        this.player.draw();
+
+        // Call rendering of all the objects
+        for (var i = 0, l = this.objects.length; i < l; i++) {
+            this.objects[i].draw();
+        }
+        
         this.renderid = setTimeout(proxyRender, 1000 / this.rendermxf);
     }
-    
-    if (this.options.showfps) {
-        this.renderf++;
-        if (this.renderf === this.rendermxf) {
-            var now = +(new Date());
-            this.fps = ((this.rendermxf / (now - this.rendert)) * 1000) | 0;
-            this.rendert = now;
-            this.renderf = 0;
-        }
-
-    	this.ctx.fillStyle = '#0f0';
-    	this.ctx.font = '10px/10px Helvetica, Arial, sans-serif';
-
-    	this.ctx.fillText('FPS: ' + this.fps, 0, 10);
+    else {
+        this.renderGameStats();
     }
+    
+    this.options.showfps && this.renderFPS();
+    
+    console.log('render')
 };
-SpaceMonkey.prototype.clear = function() {
-	var image = new Image();
+SpaceMonkey.prototype.renderFPS = function() {
+    this.renderf++;
+    if (this.renderf === this.rendermxf) {
+        var now = +(new Date());
+        this.fps = ((this.rendermxf / (now - this.rendert)) * 1000) | 0;
+        this.rendert = now;
+        this.renderf = 0;
+    }
 
-	image.src = 'src/img/canvas.jpg';
-	
+	this.ctx.fillStyle = '#0f0';
+	this.ctx.font = '10px/10px Monospace, Fixedsys, sans-serif';
+
+	this.ctx.fillText('FPS: ' + this.fps, 0, 10);
+};
+SpaceMonkey.prototype.renderGameStats = function() {
+    var cx = this.width / 2,
+        cy = this.height / 2;
+
+    this.ctx.fillStyle = '#f00';
+	this.ctx.font = 'bold 20px/20px Monospace, Fixedsys, sans-serif';
+
+	this.ctx.fillText('GAME OVER!', cx - 60, cy - 20);
+    this.ctx.fillText('PLAYED: ' + ((Date.now() - this.scoret) / (1000 * 60)).toFixed(2) + ' min.', cx - 100, cy);
+    
+    this.ctx.font = 'bold 15px/15px Monospace, Fixedsys, sans-serif';
+	this.ctx.fillText('PLAY AGAIN?', cx - 50, cy + 60);
+};
+
+SpaceMonkey.prototype.clear = function() {
 	this.ctx.clearRect(0, 0, this.width, this.height);
 
 	this.ctx.beginPath();
@@ -370,13 +420,6 @@ SpaceMonkey.prototype.clear = function() {
 	this.ctx.closePath();
     this.ctx.fillStyle = '#0f2e60';
 	this.ctx.fill();
-    
-	try {
-        this.ctx.drawImage(image, (this.width / 2) - (image.width / 2), (this.height / 2) - (image.height / 2), image.width, image.height);
-    }
-    catch (e) {
-        this.debug(e);
-    };
 };
 
 // ===================================================================
@@ -409,6 +452,7 @@ SpaceMonkey.prototype.debug = function() {
     }
 };
 
-
-var game = new SpaceMonkey();
-game.start();
+$(document).ready(function() {
+    var game = new SpaceMonkey();
+    game.start();
+});
