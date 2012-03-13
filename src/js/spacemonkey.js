@@ -1,7 +1,9 @@
+// TODO: investigate fps drop after game reset
+// TODO: add game start screen
+
 // ===================================================================
 // Game initialization
 // ===================================================================
-
 var SpaceMonkey = function(settings) {
     // Settings recognition
     this.options = $.extend({
